@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy environment code
 COPY . .
 
-RUN openenv validate . || true
+RUN openenv validate .
 
 # Expose the API port (HF Spaces default)
 EXPOSE 7860
