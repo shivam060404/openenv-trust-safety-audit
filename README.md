@@ -127,7 +127,7 @@ Trust & Safety (T&S) Analyst is a critical role at every company that deploys an
 
 - Python 3.11+
 - Docker (for containerised deployment)
-- An API key (HuggingFace token or OpenAI key) for inference
+- An API key for one provider: Hugging Face Router, Groq, or OpenAI
 
 ### Local Setup
 
@@ -138,6 +138,13 @@ cd trust-safety-audit-env
 
 # Install dependencies
 pip install -r requirements.txt
+
+# Configure provider + credentials
+cp .env.example .env
+# Edit .env and set one of:
+# - LLM_PROVIDER=hf with HF_TOKEN
+# - LLM_PROVIDER=groq with GROQ_API_KEY
+# - LLM_PROVIDER=openai with OPENAI_API_KEY
 
 # Run the server locally
 uvicorn server:app --host 0.0.0.0 --port 7860
@@ -153,15 +160,14 @@ curl -X POST http://localhost:7860/reset \
 ### Run Inference
 
 ```bash
-# Set up your environment variables
-cp .env.example .env
-# Edit .env and add your HF_TOKEN or OPENAI_API_KEY
+# Ensure .env is configured for your provider
+# Examples:
+#   LLM_PROVIDER=hf    + HF_TOKEN=...
+#   LLM_PROVIDER=groq  + GROQ_API_KEY=...
+#   LLM_PROVIDER=openai + OPENAI_API_KEY=...
 
 # Run the mandatory inference script
 python inference.py
-
-# Or run the baseline
-python baseline.py
 ```
 
 ### Docker
@@ -172,7 +178,9 @@ docker build -t trust-safety-audit-env .
 
 # Run
 docker run -p 7860:7860 \
-  -e HF_TOKEN=$HF_TOKEN \
+  -e LLM_PROVIDER=groq \
+  -e GROQ_API_KEY=$GROQ_API_KEY \
+  -e MODEL_NAME=llama-3.3-70b-versatile \
   trust-safety-audit-env
 
 # Test
@@ -191,7 +199,7 @@ curl -X POST http://localhost:7860/reset \
 | `/state` | GET | Returns current serialisable environment state |
 | `/tasks` | GET | Lists all tasks and the `AuditAction` schema |
 | `/grader` | GET | Returns `AuditReward` after episode completion |
-| `/baseline` | POST | Triggers baseline.py and returns all scores |
+| `/baseline` | POST | Triggers `inference.py` benchmark and returns scores |
 | `/docs` | GET | OpenAPI documentation (auto-generated) |
 
 ---
@@ -220,7 +228,6 @@ trust-safety-audit-env/
 ├── environment.py        # Core TrustSafetyAuditEnv (reset/step/state)
 ├── server.py             # FastAPI server (8 endpoints)
 ├── inference.py          # Mandatory inference script (STDOUT format)
-├── baseline.py           # Baseline runner (OpenAI client)
 ├── Dockerfile            # Container definition
 ├── requirements.txt      # Python dependencies
 └── README.md             # This file

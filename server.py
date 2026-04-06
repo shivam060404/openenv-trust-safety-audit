@@ -14,17 +14,17 @@ Exposes all 8 required endpoints:
 
 from __future__ import annotations
 
+import asyncio
 import json
 import os
-import subprocess
-import sys
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from environment import TASK_IDS, TrustSafetyAuditEnv
+from inference import run_benchmark
 from models import AuditAction, AuditObservation, AuditReward, Decision
 
 
@@ -257,52 +257,36 @@ async def grader():
 
 
 @app.post("/baseline", response_model=BaselineResponse, tags=["Environment"])
-async def baseline():
+async def baseline(force: bool = Query(False, description="Recompute baseline even if cache exists")):
     """
-    Trigger the baseline inference script and return scores for all 3 tasks.
-
-    This runs baseline.py as a subprocess and returns the results.
-    If baseline_results.json exists (from a previous run), returns cached results.
+    Trigger inference benchmark and return scores for all tasks.
+    Uses a cached file when available.
     """
     results_path = os.path.join(os.path.dirname(__file__) or ".", "baseline_results.json")
 
-    # Check for cached results first
-    if os.path.exists(results_path):
-        with open(results_path, "r") as f:
+    # Check for cached results first, unless force refresh is requested.
+    if os.path.exists(results_path) and not force:
+        with open(results_path, "r", encoding="utf-8") as f:
             results = json.load(f)
         return BaselineResponse(results=results, status="cached")
 
-    # Run baseline.py
+    # Run benchmark and persist
+    baseline_timeout_sec = int(os.getenv("BASELINE_TIMEOUT_SEC", "300"))
     try:
-        result = subprocess.run(
-            [sys.executable, "baseline.py"],
-            capture_output=True,
-            text=True,
-            timeout=300,
-            cwd=os.path.dirname(__file__) or ".",
+        results = await asyncio.wait_for(
+            asyncio.to_thread(run_benchmark, False),
+            timeout=baseline_timeout_sec,
         )
-
-        if result.returncode != 0:
-            raise HTTPException(
-                status_code=500,
-                detail=f"Baseline script failed: {result.stderr}",
-            )
-
-        # Load results
-        if os.path.exists(results_path):
-            with open(results_path, "r") as f:
-                results = json.load(f)
-            return BaselineResponse(results=results, status="completed")
-        else:
-            return BaselineResponse(
-                results={"stdout": result.stdout},
-                status="completed_no_file",
-            )
-
-    except subprocess.TimeoutExpired:
+        with open(results_path, "w", encoding="utf-8") as f:
+            json.dump(results, f, indent=2)
+        return BaselineResponse(results=results, status="completed")
+    except asyncio.TimeoutError:
         raise HTTPException(
             status_code=504,
-            detail="Baseline script timed out after 5 minutes.",
+            detail=(
+                f"Baseline run exceeded {baseline_timeout_sec}s timeout. "
+                "Try a faster model, fewer episodes, or retry later."
+            ),
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
