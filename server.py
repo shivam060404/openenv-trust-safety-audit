@@ -122,6 +122,13 @@ class BaselineResponse(BaseModel):
 # Endpoints
 # ═══════════════════════════════════════════════════════════════════════════════
 
+from fastapi.responses import RedirectResponse
+
+@app.get("/", include_in_schema=False)
+async def root():
+    """Redirect root to OpenAPI docs."""
+    return RedirectResponse(url="/docs")
+
 @app.get("/health", response_model=HealthResponse, tags=["System"])
 async def health():
     """Health check endpoint. Returns 200 OK."""
