@@ -125,7 +125,7 @@ def grade_task3_episode(
         Float score in [0.0, 1.0].
     """
     if intercept_turn_index is None:
-        return 0.0  # Agent never blocked — full miss
+        return 0.01  # Agent never blocked — strictly positive minimal bound
 
     # Earlier interception → higher score
     turns_remaining = total_turns - intercept_turn_index

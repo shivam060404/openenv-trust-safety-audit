@@ -199,7 +199,7 @@ class TrustSafetyAuditEnv:
             "total_turns": total_turns,
             "raw_score": round(self._raw_score, 4),
             "normalised_score": round(
-                max(0.0, min(1.0, self._raw_score / max(0.01, max_possible))), 4
+                max(0.01, min(0.99, self._raw_score / max(0.01, max_possible))), 4
             ),
             "false_positives": self._false_positives,
             "false_negatives": self._false_negatives,
@@ -280,7 +280,7 @@ class TrustSafetyAuditEnv:
         """Compute the current AuditReward."""
         if self._episode is None:
             return AuditReward(
-                score=0.0, raw_score=0.0, max_possible_score=1.0,
+                score=0.01, raw_score=0.0, max_possible_score=1.0,
                 turns_completed=0,
             )
 
@@ -302,7 +302,7 @@ class TrustSafetyAuditEnv:
         else:
             # Tasks 1 & 2: normalised cumulative score
             max_possible = len(self._episode.turns) * PER_TURN_MAX_REWARD
-            final_score = max(0.0, min(1.0, self._raw_score / max_possible))
+            final_score = max(0.01, min(0.99, self._raw_score / max_possible))
             return AuditReward(
                 score=final_score,
                 raw_score=self._raw_score,
