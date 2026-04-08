@@ -39,8 +39,12 @@ load_dotenv()
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 
-PROVIDER = os.getenv("LLM_PROVIDER", "hf").strip().lower()
-MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api.groq.com/openai/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "llama-3.3-70b-versatile")
+HF_TOKEN = os.getenv("HF_TOKEN")
+LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
+
+PROVIDER = os.getenv("LLM_PROVIDER", "groq").strip().lower()
 BENCHMARK = "trust-safety-audit-env"
 MAX_STEPS = 15          # Max steps per episode (generous upper bound)
 TEMPERATURE = 0.1       # Low temp for consistency
@@ -99,19 +103,8 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
 def _resolve_client_config() -> tuple[str, str, str]:
     """Resolve provider, API key, and base URL for OpenAI-compatible clients."""
     provider = PROVIDER
-
-    if provider == "groq":
-        api_key = os.getenv("GROQ_API_KEY") or os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY")
-        base_url = os.getenv("API_BASE_URL") or "https://api.groq.com/openai/v1"
-    elif provider == "openai":
-        api_key = os.getenv("OPENAI_API_KEY") or os.getenv("API_KEY")
-        base_url = os.getenv("API_BASE_URL") or "https://api.openai.com/v1"
-    else:
-        provider = "hf"
-        api_key = os.getenv("HF_TOKEN") or os.getenv("API_KEY") or os.getenv("OPENAI_API_KEY")
-        base_url = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
-
-    return provider, api_key or "", base_url
+    api_key = os.getenv(f"{provider.upper()}_API_KEY") or HF_TOKEN or os.getenv("API_KEY")
+    return provider, api_key or "", API_BASE_URL
 
 
 def _is_transient_error(exc: Exception) -> bool:
