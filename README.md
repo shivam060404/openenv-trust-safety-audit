@@ -170,6 +170,55 @@ curl -X POST http://localhost:7860/reset \
 python inference.py
 ```
 
+### Run the Live Interactive Coliseum
+
+The production order is now defender-first:
+
+```text
+attacker query -> defender BLOCK/ALLOW/tool -> victim model only if ALLOW
+```
+
+Run one continuous chat-style session locally:
+
+```bash
+python live_arena.py --turns 24 --seed 42
+```
+
+Everything is logged as JSONL to `live_interactive_logs.log`, and GRPO-ready
+rollouts are written to `data/live_grpo_trajectories.jsonl`.
+
+To watch the locally fine-tuned Coliseum models play attacker and defender,
+with Groq/OpenAI-compatible inference used only for the victim model:
+
+```bash
+env/bin/python live_arena.py --turns 24 --seed 42
+```
+
+Default live arena roles:
+
+```text
+attacker: local Qwen2.5-0.5B + coliseum-attacker-dan / coliseum-attacker-wild adapters
+defender: local Qwen2.5-1.5B + coliseum-defender-sft adapter
+victim: Groq/OpenAI-compatible model when VICTIM_PROVIDER/LLM_PROVIDER is configured
+```
+
+For a fast offline smoke test without loading local models:
+
+```bash
+env/bin/python live_arena.py --turns 4 --attackers scripted --defender heuristic --victim local
+```
+
+Collect batch trajectories and run the TRL/GRPO entry point:
+
+```bash
+python train_grpo.py collect --episodes 4 --turns 24
+python train_grpo.py train --model_name Qwen/Qwen2.5-0.5B-Instruct --max_steps 20
+```
+
+For Hugging Face Spaces, no heavyweight attacker model download is required by
+default. Set `USE_LOCAL_ATTACKER_MODELS=1` only when the LoRA attacker adapters
+are available and you intentionally want model-generated attacker prompts.
+
 ### Docker
 
 ```bash
