@@ -36,6 +36,15 @@ from pathlib import Path
 from typing import Optional
 from collections import deque
 
+# Load .env from project root before anything else reads env vars
+try:
+    from dotenv import load_dotenv
+    _env_path = Path(__file__).parent.parent.parent / '.env'
+    if _env_path.exists():
+        load_dotenv(_env_path)
+except ImportError:
+    pass  # python-dotenv optional; env vars must be set manually
+
 import torch
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -45,7 +54,7 @@ from pydantic import BaseModel
 # Add parent to path for reward + config modules
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from reward.mesa_reward import parse_defender_output
+from reward.mesa_reward import parse_defender_output, compute_reward
 from configs.config import (
     SFT_MODEL_REPO,
     SYSTEM_PROMPT,
@@ -82,6 +91,12 @@ _device    = None
 
 # Metrics ring buffer
 _call_log = deque(maxlen=500)
+
+# Per-session memory: session_id -> list of past records (newest at end)
+# Each record: { turn_index, prompt, decision, confidence, reason, true_label }
+_session_memory: dict = {}
+_session_counters: dict = {}
+SESSION_MEMORY_MAX = 20
 
 
 def load_model(model_repo: str, hf_token: Optional[str] = None):
@@ -133,29 +148,61 @@ def load_model(model_repo: str, hf_token: Optional[str] = None):
     logger.info(f'   VRAM:   {torch.cuda.memory_allocated()/1e9:.2f}GB used')
 
 
+def build_audit_message(prompt_text: str, memory: Optional[list] = None) -> str:
+    """Compose the user message, optionally injecting per-session memory of the
+    defender's own past decisions and the reward each decision earned. The
+    defender does NOT see ground-truth labels directly — only the reward signal
+    (and its TP/FP/FN/TN bucket) so it can adapt to its own past errors."""
+    head = f'Audit this prompt:\n\n{prompt_text[:MAX_INPUT_LEN]}'
+    if not memory:
+        return head
+
+    lines = ['## Your recent decisions in this session and the reward each earned:']
+    for r in memory:
+        decided = r['decision']
+        conf    = r.get('confidence', 0.0)
+        score   = r.get('reward_score')
+        label   = r.get('reward_label')
+        if score is None:
+            tail = '(reward pending)'
+        else:
+            tail = f'reward={score:+.2f} ({label})'
+        snippet = (r.get('prompt') or '')[:140].replace('\n', ' ')
+        lines.append(f'  - "{snippet}" -> {decided} (conf={conf:.2f}), {tail}')
+    lines.append('')
+    lines.append('Use this self-feedback to improve your next call. A negative reward')
+    lines.append('on a past turn means that decision was wrong; adjust accordingly.')
+    lines.append('')
+    lines.append(head)
+    return '\n'.join(lines)
+
+
 @torch.no_grad()
-def run_defender(prompt_text: str) -> dict:
+def run_defender(prompt_text: str, memory: Optional[list] = None) -> dict:
     """
     Run the defender model on a prompt.
     Returns parsed decision dict.
     Called per-request by the API.
     """
+    user_content = build_audit_message(prompt_text, memory)
     messages = [
         {'role': 'system', 'content': SYSTEM_PROMPT},
-        {'role': 'user',   'content': f'Audit this prompt:\n\n{prompt_text[:MAX_INPUT_LEN]}'}
+        {'role': 'user',   'content': user_content}
     ]
 
-    input_ids = _tokenizer.apply_chat_template(
+    # apply_chat_template as string first, then tokenize separately so we get
+    # a proper BatchEncoding (input_ids + attention_mask) for generate()
+    text   = _tokenizer.apply_chat_template(
         messages,
-        tokenize=True,
+        tokenize=False,
         add_generation_prompt=True,
-        return_tensors='pt'
-    ).to(_model.device)
+    )
+    inputs = _tokenizer(text, return_tensors='pt').to(_model.device)
 
     t0 = time.perf_counter()
 
     output_ids = _model.generate(
-        input_ids,
+        **inputs,
         max_new_tokens = MAX_NEW_TOKENS,
         temperature    = TEMPERATURE,
         do_sample      = True,
@@ -164,7 +211,7 @@ def run_defender(prompt_text: str) -> dict:
 
     latency_ms = (time.perf_counter() - t0) * 1000
 
-    new_tokens  = output_ids[0][input_ids.shape[-1]:]
+    new_tokens  = output_ids[0][inputs['input_ids'].shape[-1]:]
     raw_output  = _tokenizer.decode(new_tokens, skip_special_tokens=True)
     parsed      = parse_defender_output(raw_output)
 
@@ -194,8 +241,10 @@ app.add_middleware(
 
 
 class PredictRequest(BaseModel):
-    prompt:     str
-    session_id: str = 'default'
+    prompt:        str
+    session_id:    str  = 'default'
+    use_memory:    bool = False    # opt-in for back-compat; True for stateful sessions
+    memory_window: int  = 5        # how many past records to inject
 
 
 class PredictResponse(BaseModel):
@@ -205,6 +254,14 @@ class PredictResponse(BaseModel):
     latency_ms: float
     session_id: str
     format_ok:  bool
+    turn_index: int    # monotonic per session — pass to /defender/feedback
+
+
+class RewardRequest(BaseModel):
+    session_id:  str
+    turn_index:  int
+    true_label:  str    # 'UNSAFE' | 'SAFE' — used ONLY to compute the reward
+    attack_tier: int = 1  # 1=DAN, 2=Wild, 3=Mutation — for tier bonus
 
 
 class HealthResponse(BaseModel):
@@ -242,7 +299,32 @@ def predict(req: PredictRequest):
     if not req.prompt or len(req.prompt.strip()) < 3:
         raise HTTPException(status_code=422, detail='Prompt too short')
 
-    result = run_defender(req.prompt)
+    # Build per-session memory window (server-side state)
+    memory_slice: list = []
+    if req.use_memory:
+        full_mem = _session_memory.get(req.session_id, [])
+        w = req.memory_window if req.memory_window and req.memory_window > 0 else len(full_mem)
+        memory_slice = full_mem[-w:]
+
+    result = run_defender(req.prompt, memory_slice)
+
+    # Allocate monotonic turn_index and append session record
+    turn_idx = _session_counters.get(req.session_id, 0)
+    _session_counters[req.session_id] = turn_idx + 1
+    record = {
+        'turn_index':   turn_idx,
+        'prompt':       req.prompt,
+        'decision':     result['decision'],
+        'confidence':   result['confidence'],
+        'reason':       result['reason'],
+        'reward_score': None,   # filled in by /defender/record_reward
+        'reward_label': None,   # TP / TN / FP / FN
+        'ts':           time.time(),
+    }
+    sess_mem = _session_memory.setdefault(req.session_id, [])
+    sess_mem.append(record)
+    if len(sess_mem) > SESSION_MEMORY_MAX:
+        del sess_mem[0:len(sess_mem) - SESSION_MEMORY_MAX]
 
     # Log for metrics
     _call_log.append({
@@ -254,9 +336,10 @@ def predict(req: PredictRequest):
     })
 
     logger.info(
-        f'[{req.session_id[:8]}] {result["decision"]} '
+        f'[{req.session_id[:8]}#{turn_idx}] {result["decision"]} '
         f'conf={result["confidence"]:.2f} '
-        f'lat={result["latency_ms"]:.0f}ms'
+        f'lat={result["latency_ms"]:.0f}ms '
+        f'mem={len(memory_slice)}'
     )
 
     return PredictResponse(
@@ -266,7 +349,61 @@ def predict(req: PredictRequest):
         latency_ms = result['latency_ms'],
         session_id = req.session_id,
         format_ok  = result['format_ok'],
+        turn_index = turn_idx,
     )
+
+
+@app.post('/defender/record_reward')
+def record_reward(req: RewardRequest):
+    """Compute and stamp the reward for a past prediction onto its session
+    memory record. The defender's next call will see the reward (and TP/FP/FN/TN
+    label) but NOT the raw ground-truth label — adaptation happens through the
+    reward signal, mirroring how GRPO trains it offline."""
+    mem = _session_memory.get(req.session_id)
+    if not mem:
+        raise HTTPException(status_code=404, detail=f'unknown session {req.session_id}')
+    label = req.true_label.upper()
+    if label not in ('UNSAFE', 'SAFE'):
+        raise HTTPException(status_code=422, detail='true_label must be UNSAFE or SAFE')
+    for r in mem:
+        if r['turn_index'] == req.turn_index:
+            reward = compute_reward(
+                decision    = r['decision'],
+                confidence  = r['confidence'],
+                true_label  = label,
+                attack_tier = req.attack_tier,
+                format_ok   = True,
+            )
+            r['reward_score'] = reward['score']
+            r['reward_label'] = reward['label']
+            return {
+                'status':       'ok',
+                'turn_index':   req.turn_index,
+                'reward_score': reward['score'],
+                'reward_label': reward['label'],
+                'breakdown':    reward['breakdown'],
+            }
+    raise HTTPException(status_code=404, detail=f'turn_index {req.turn_index} not in session')
+
+
+@app.post('/defender/session/reset')
+def reset_session(session_id: str = 'default'):
+    """Clear per-session memory and turn counter."""
+    _session_memory.pop(session_id, None)
+    _session_counters.pop(session_id, None)
+    return {'status': 'ok', 'session_id': session_id}
+
+
+@app.get('/defender/session/{session_id}')
+def get_session(session_id: str):
+    """Inspect server-side memory for a session."""
+    mem = _session_memory.get(session_id, [])
+    return {
+        'session_id':  session_id,
+        'turn_count':  _session_counters.get(session_id, 0),
+        'memory_size': len(mem),
+        'memory':      mem,
+    }
 
 
 @app.get('/defender/metrics')
@@ -319,9 +456,11 @@ if __name__ == '__main__':
     load_model(args.model_repo, args.hf_token)
 
     logger.info(f'🚀 Starting Defender API at http://{args.host}:{args.port}')
-    logger.info(f'   Health:  GET  /defender/health')
-    logger.info(f'   Predict: POST /defender/predict')
-    logger.info(f'   Metrics: GET  /defender/metrics')
-    logger.info(f'   Reload:  POST /defender/reload')
+    logger.info(f'   Health:         GET  /defender/health')
+    logger.info(f'   Predict:        POST /defender/predict        (use_memory=True for stateful sessions)')
+    logger.info(f'   Record reward:  POST /defender/record_reward  (stamps reward onto past decision)')
+    logger.info(f'   Session:        GET  /defender/session/{{id}}   POST /defender/session/reset')
+    logger.info(f'   Metrics:        GET  /defender/metrics')
+    logger.info(f'   Reload:         POST /defender/reload')
 
     uvicorn.run(app, host=args.host, port=args.port, log_level='info')

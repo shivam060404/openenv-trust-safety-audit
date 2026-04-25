@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import ast; ast.parse\\(open\\('coliseum_defender/integration/defender_api.py'\\).read\\(\\)\\); ast.parse\\(open\\('interactive_session.py'\\).read\\(\\)\\); print\\('OK: both files parse cleanly'\\)\")",
+      "Bash(where py *)",
+      "PowerShell(Get-Command py, python, python3 -ErrorAction SilentlyContinue)",
+      "Bash(git fetch *)",
+      "Bash(git stash *)",
+      "Bash(git merge *)",
+      "Bash(python -c \"import ast; files = ['environment.py','server.py','run_arena.py','baseline.py','inference.py','models.py','interactive_session.py','coliseum_defender/integration/defender_api.py']; [print\\(f'OK: {f}'\\) or ast.parse\\(open\\(f\\).read\\(\\)\\) for f in files]; print\\('All parse clean'\\)\")",
+      "Bash(\"C:\\\\Users\\\\ASUS\\\\anaconda3\\\\envs\\\\hack-blr\\\\python.exe\" -c \"import ast; files = ['environment.py','server.py','run_arena.py','baseline.py','inference.py','models.py','interactive_session.py','coliseum_defender/integration/defender_api.py']; [print\\(f'OK: {f}'\\) or ast.parse\\(open\\(f\\).read\\(\\)\\) for f in files]; print\\('All parse clean'\\)\")",
+      "PowerShell(Get-Process -Id \\(Get-NetTCPConnection -LocalPort 8001 -ErrorAction SilentlyContinue\\).OwningProcess -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime)"
+    ]
+  }
+}
