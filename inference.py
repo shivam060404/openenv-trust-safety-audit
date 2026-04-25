@@ -46,7 +46,7 @@ LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 
 PROVIDER = os.getenv("LLM_PROVIDER", "groq").strip().lower()
 BENCHMARK = "trust-safety-audit-env"
-MAX_STEPS = 15          # Max steps per episode (generous upper bound)
+MAX_STEPS = 25          # Max steps per episode; live sessions are capped at 25
 TEMPERATURE = 0.1       # Low temp for consistency
 MAX_TOKENS = 50         # We only need ALLOW/BLOCK + short reasoning
 SEED = 42               # Fixed seed for reproducibility
@@ -109,6 +109,22 @@ def _resolve_client_config() -> tuple[str, str, str]:
     return provider, api_key or "", API_BASE_URL
 
 
+def _rule_based_decision(current_turn: str, conversation_history: list) -> tuple[Decision, Optional[str]]:
+    """Offline fallback used when no provider key is configured."""
+    lower = current_turn.lower()
+    suspicious = [
+        "ignore previous", "developer mode", "dan", "jailbreak", "no restrictions",
+        "bypass", "system prompt", "base64", "decode it silently", "fragment",
+        "phishing", "credential", "api key", "cookies", "exfiltrat", "malware",
+        "keylogger", "exploit", "methamphetamine", "explosive", "pick a lock",
+        "authorized red-team", "clearance",
+    ]
+    hits = sum(1 for item in suspicious if item in lower)
+    if hits:
+        return Decision.BLOCK, f"offline policy fallback matched {hits} risk pattern(s)"
+    return Decision.ALLOW, "offline policy fallback found no high-risk pattern"
+
+
 def _is_transient_error(exc: Exception) -> bool:
     message = str(exc).lower()
     return (
@@ -126,12 +142,16 @@ def get_model_decision(
     client: OpenAI,
     current_turn: str,
     conversation_history: list,
+    use_api: bool = True,
 ) -> tuple[Decision, Optional[str]]:
     """
     Call the LLM to get an ALLOW/BLOCK decision.
 
     Returns (decision, reasoning).
     """
+    if not use_api:
+        return _rule_based_decision(current_turn, conversation_history)
+
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
     for hist in conversation_history[-6:]:
@@ -189,7 +209,7 @@ def run_single_episode(
     if emit_logs:
         log_start(task=task_id, env=BENCHMARK, model=model_short)
 
-    obs = env.reset(episode_id=f"{task_id}_{episode_seed}", seed=episode_seed)
+    obs = env.reset(episode_id=f"{task_id}_{episode_seed}", seed=episode_seed, total_turns=MAX_STEPS)
     rewards: List[float] = []
     steps_taken = 0
     final_score = 0.0
@@ -197,7 +217,12 @@ def run_single_episode(
 
     try:
         for step_num in range(1, MAX_STEPS + 1):
-            decision, reasoning = get_model_decision(client, obs.current_turn, obs.conversation_history)
+            decision, reasoning = get_model_decision(
+                client,
+                obs.current_turn,
+                obs.conversation_history,
+                use_api=bool(client.api_key and client.api_key != "demo-key"),
+            )
 
             action = AuditAction(decision=decision, reasoning=reasoning)
             obs = env.step(action)
@@ -228,6 +253,10 @@ def run_single_episode(
     except Exception as exc:
         print(f"Episode error: {exc}", file=sys.stderr, flush=True)
 
+    if final_score == 0.0 and rewards:
+        final_score = env.state["raw_score"]
+        success = final_score >= SUCCESS_THRESHOLD
+
     if emit_logs:
         log_end(success=success, steps=steps_taken, score=final_score, rewards=rewards)
     return success, steps_taken, final_score, rewards
@@ -236,16 +265,14 @@ def run_single_episode(
 def run_benchmark(emit_logs: bool = True) -> Dict[str, Any]:
     """Run benchmark across all tasks and return reproducible baseline stats."""
     provider, api_key, api_base_url = _resolve_client_config()
-    client = OpenAI(
-        base_url=api_base_url,
-        api_key=api_key or "demo-key",
-        timeout=REQUEST_TIMEOUT_SEC,
-    )
+    use_api = bool(api_key and api_key != "demo-key")
+    client = OpenAI(base_url=api_base_url, api_key=api_key or "demo-key", timeout=REQUEST_TIMEOUT_SEC)
     env = TrustSafetyAuditEnv()
 
     all_results: Dict[str, Any] = {
         "provider": provider,
         "model": MODEL_NAME,
+        "mode": "api" if use_api else "offline_rule_based",
         "episodes_per_task": N_EPISODES_PER_TASK,
         "seed": SEED,
         "tasks": {},

@@ -61,7 +61,6 @@ class AuditObservation(Observation):
         turn_index: 0-based index of the current turn within the episode.
         total_turns: Total number of turns in this episode.
         conversation_history: Prior (turn, decision) pairs in this session.
-        safety_ledger: The long-horizon tracking state.
         tool_output: If the last action was a tool call, the result is here.
         metadata: Source context — task_id, difficulty, attack_type, etc.
     """
