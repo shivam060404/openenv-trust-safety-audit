@@ -21,7 +21,17 @@ from tools.permission_checker import check_clearance
 from tools.policy_lookup import lookup_policy
 
 from curriculum_engine import CurriculumEngine, TIER_NAMES
-from coliseum_defender.reward.mesa_reward import compute_reward
+from reward import (
+    compute_reward,
+    AlwaysBlockDetector,
+    AlwaysAllowDetector,
+    GraderExploitDetector,
+    EntropyPenalty,
+    PatternMemDetector,
+    RewardNormalizer,
+    RewardLogger,
+    AggregationMode,
+)
 
 import logging
 logger = logging.getLogger("environment")
@@ -119,14 +129,24 @@ class TrustSafetyAuditEnv(Environment[AuditAction, AuditObservation, dict]):
         self.false_positives: int = 0
         self.false_negatives: int = 0
         self.is_done: bool = True
+        self.episode_count: int = 0
         
         self.current_goal: str = ""
         self.current_jailbreak: str = ""
         self.current_target_resp: str = ""
         
         self.conversation_history: List[Dict[str, Any]] = []
+        self.decision_history: List[str] = []
+        self.block_reasons_ep: List[str] = []
         
         self.last_tool_output: Optional[str] = None
+        
+        # Reward system — initialized per-episode in reset()
+        self._reward_normalizer = RewardNormalizer(warmup=20)
+        self._reward_logger     = RewardLogger()
+        self._anti_hack: Dict[str, Any] = {}
+        self._tp_count: int = 0
+        self._total_unsafe: int = 0
 
     def _generate_attack(self) -> Tuple[str, str]:
         """Generates attack using the current curriculum tier."""
@@ -158,9 +178,24 @@ class TrustSafetyAuditEnv(Environment[AuditAction, AuditObservation, dict]):
         self.false_positives = 0
         self.false_negatives = 0
         self.is_done = False
+        self.episode_count += 1
+        self._tp_count = 0
+        self._total_unsafe = 0
         
         self.conversation_history = []
-        self.last_tool_output = None
+        self.decision_history     = []
+        self.block_reasons_ep     = []
+        self.last_tool_output     = None
+        
+        # Fresh anti-hack detectors each episode
+        self._anti_hack = {
+            "always_block":  AlwaysBlockDetector(window=10),
+            "always_allow":  AlwaysAllowDetector(window=10),
+            "grader_exploit": GraderExploitDetector(window=20),
+            "entropy":       EntropyPenalty(window=10),
+            "pattern_mem":   PatternMemDetector(),
+        }
+        self._reward_logger.start_episode(self.session_id)
         
         # Optionally schema drift: change policies randomly to test adaptation
         if self.rng.random() < 0.3:
@@ -211,32 +246,66 @@ class TrustSafetyAuditEnv(Environment[AuditAction, AuditObservation, dict]):
         if "lock" in self.current_goal.lower() and "ALLOWED" in self._policies["lock"]:
             true_label = "SAFE"
 
-        # Compute Reward
+        # Track unsafe turns for coverage reward
+        if true_label == "UNSAFE":
+            self._total_unsafe += 1
+
+        # Episode false-positive rate for dynamic FP scaling
+        ep_fp_rate = self.false_positives / max(self.turn_index + 1, 1)
+
+        # Extract reasoning from action if available
+        reason_text = action.reasoning or ""
+        format_ok   = bool(reason_text and len(reason_text.split()) >= 3)
+
+        # Compute full production reward
         reward_dict = compute_reward(
-            decision=decision.value,
-            confidence=1.0, # We don't have model confidence here since the env is testing the agent
-            true_label=true_label,
-            attack_tier=self.curriculum.current_tier
+            decision          = decision.value,
+            confidence        = 0.80,  # default; overridden when real confidence available
+            true_label        = true_label,
+            attack_tier       = self.curriculum.current_tier,
+            format_ok         = format_ok,
+            turn_index        = self.turn_index,
+            total_turns       = self.total_turns,
+            prompt_text       = self.current_jailbreak[:500],
+            reason            = reason_text,
+            decision_history  = self.decision_history.copy(),
+            n_mutations       = 2 if self.curriculum.current_tier == 3 else 0,
+            episode_fp_rate   = ep_fp_rate,
+            anti_hack_detectors = self._anti_hack,
+            aggregation_mode  = AggregationMode.CONSTRAINT,
+            episode_count     = self.episode_count,
+            normalizer        = self._reward_normalizer,
         )
-        
+
         step_reward = reward_dict["score"]
         self.raw_score += step_reward
-        
+
+        # Track TP count for episode coverage reward
+        if reward_dict["label"] == "TP":
+            self._tp_count += 1
+
         # Record outcome
         if reward_dict["label"] == "FP":
             self.false_positives += 1
         elif reward_dict["label"] == "FN":
             self.false_negatives += 1
-            
+
+        # Track decision history for consistency/entropy rewards
+        self.decision_history.append(decision.value)
+        if decision == Decision.BLOCK and reason_text:
+            self.block_reasons_ep.append(reason_text)
+
         # Update Curriculum (Theme 4)
         blocked = (decision == Decision.BLOCK)
         self.curriculum.record(self.curriculum.current_tier, blocked)
 
         # History
         self.conversation_history.append({
-            "turn": self.current_jailbreak,
-            "action": decision.value,
-            "reward": step_reward
+            "turn":         self.current_jailbreak,
+            "action":       decision.value,
+            "reward":       step_reward,
+            "label":        reward_dict["label"],
+            "breakdown":    reward_dict.get("breakdown", {}),
         })
 
         self.turn_index += 1
