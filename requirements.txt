@@ -1,7 +1,44 @@
+# COLISEUM — Python Dependencies
+# Install: pip install -r requirements.txt
+#
+# For Mac Apple Silicon (MPS): all packages work natively.
+# For Kaggle/Colab (CUDA): also install unsloth separately (see coliseum_defender/scripts/kaggle_setup.sh)
+
+# ── OpenEnv Server ────────────────────────────────────────────────────────────
 openenv-core==0.2.3
 fastapi>=0.111.0
 uvicorn>=0.29.0
 pydantic>=2.0.0
-openai>=1.30.0
-python-dotenv>=1.0.0
 pyyaml>=6.0.0
+
+# ── LLM API clients ───────────────────────────────────────────────────────────
+openai>=1.30.0          # Groq uses OpenAI-compatible client
+python-dotenv>=1.0.0
+requests>=2.31.0
+
+# ── Core ML (defender + attackers) ───────────────────────────────────────────
+torch>=2.1.0
+transformers>=4.43.0
+accelerate>=0.28.0
+peft>=0.10.0
+trl==0.15.2
+datasets>=2.18.0
+huggingface_hub>=0.22.0
+safetensors>=0.4.0
+sentencepiece>=0.1.99
+protobuf>=3.20.0
+
+# ── Data & Eval ───────────────────────────────────────────────────────────────
+pandas>=2.0.0
+numpy>=1.24.0
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+seaborn>=0.13.0
+tqdm>=4.65.0
+
+# ── Optional: W&B logging (orchestrator.py --wandb) ─────────────────────────
+# wandb>=0.17.0
+
+# ── NOT included (install separately on CUDA only) ────────────────────────────
+# unsloth  — see coliseum_defender/scripts/kaggle_setup.sh
+# bitsandbytes — CUDA only, not needed on Mac MPS
