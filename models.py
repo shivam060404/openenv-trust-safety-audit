@@ -3,8 +3,8 @@ Pydantic models for the Trust & Safety Audit Environment.
 
 Three required typed models per OpenEnv spec:
   - AuditAction:      What the agent submits each step
-  - AuditObservation:  What the agent receives each step
-  - AuditReward:       Score model returned by graders
+  - AuditObservation: What the agent receives each step
+  - AuditReward:      Score model returned by graders
 
 All models use Pydantic v2 for validation and serialization.
 """
@@ -15,29 +15,32 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
+from openenv.core import Action, Observation
 
 
 # ── Decision Enum ─────────────────────────────────────────────────────────────
 
 class Decision(str, Enum):
-    """The agent's binary decision for each conversational turn."""
+    """The agent's decision for each conversational turn, including tool use."""
     ALLOW = "ALLOW"
     BLOCK = "BLOCK"
+    TOOL_POLICY_LOOKUP = "TOOL_POLICY_LOOKUP"
+    TOOL_CHECK_CLEARANCE = "TOOL_CHECK_CLEARANCE"
 
 
 # ── Action Model ──────────────────────────────────────────────────────────────
 
-class AuditAction(BaseModel):
+class AuditAction(Action):
     """
     Agent output submitted on every step() call.
 
     Attributes:
-        decision: ALLOW or BLOCK the current turn.
+        decision: ALLOW, BLOCK, or a Tool call.
         reasoning: Optional explanation for logging/debugging. May be None.
     """
     decision: Decision = Field(
         ...,
-        description="The agent's decision to ALLOW or BLOCK the turn.",
+        description="The agent's decision to ALLOW, BLOCK, or call a TOOL.",
     )
     reasoning: Optional[str] = Field(
         None,
@@ -47,21 +50,28 @@ class AuditAction(BaseModel):
 
 # ── Observation Model ─────────────────────────────────────────────────────────
 
-class AuditObservation(BaseModel):
+class AuditObservation(Observation):
     """
     What the agent receives each step.
 
     Attributes:
-        current_turn: The text of the current conversational turn to audit.
+        current_turn: The text of the current user prompt (attacker jailbreak).
+        target_response: The target LLM (Groq) intended response to the prompt.
         session_id: Unique identifier for the current audit session/episode.
         turn_index: 0-based index of the current turn within the episode.
         total_turns: Total number of turns in this episode.
         conversation_history: Prior (turn, decision) pairs in this session.
+        safety_ledger: The long-horizon tracking state.
+        tool_output: If the last action was a tool call, the result is here.
         metadata: Source context — task_id, difficulty, attack_type, etc.
     """
     current_turn: str = Field(
         ...,
-        description="The current user conversational turn to be audited.",
+        description="The current user conversational turn (adversarial prompt) to be audited.",
+    )
+    target_response: str = Field(
+        "",
+        description="The Target LLM's response to the prompt.",
     )
     session_id: str = Field(
         ...,
@@ -77,11 +87,15 @@ class AuditObservation(BaseModel):
     )
     conversation_history: List[Dict[str, Any]] = Field(
         default_factory=list,
-        description="List of prior (turn, decision) pairs in this session.",
+        description="List of prior (turn, decision, tool_output) pairs in this session.",
+    )
+    tool_output: Optional[str] = Field(
+        None,
+        description="Result of an external tool call if invoked in the previous step.",
     )
     metadata: Dict[str, Any] = Field(
         default_factory=dict,
-        description="Source context: task_id, difficulty, attack_type if applicable.",
+        description="Source context: task_id, difficulty, attack_tier if applicable.",
     )
 
 
@@ -89,7 +103,7 @@ class AuditObservation(BaseModel):
 
 class AuditReward(BaseModel):
     """
-    Score model returned by graders.  Required by openenv validate.
+    Score model returned by graders. Required by openenv validate.
 
     Attributes:
         score: Final episode score clamped to [0.0, 1.0].
