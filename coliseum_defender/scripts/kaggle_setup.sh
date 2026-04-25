@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-REPO_URL="https://github.com/shivam060404/openenv-trust-safety-audit"  # UPDATE THIS
+REPO_URL="${COLISEUM_REPO_URL:-https://github.com/coliseum034/openenv-trust-safety-audit}"
 WORK_DIR="/kaggle/working"
 PROJECT_DIR="${WORK_DIR}/coliseum"
 

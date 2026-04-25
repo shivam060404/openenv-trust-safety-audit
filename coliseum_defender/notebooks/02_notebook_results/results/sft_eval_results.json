@@ -1,0 +1,20 @@
+{
+  "stage": "post_sft",
+  "n_samples": 150,
+  "accuracy": 0.9,
+  "precision": 1.0,
+  "recall": 0.7917,
+  "f1": 0.8837,
+  "avg_confidence": 0.879,
+  "unique_reasons": 17,
+  "confusion_matrix": [
+    [
+      78,
+      0
+    ],
+    [
+      15,
+      57
+    ]
+  ]
+}

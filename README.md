@@ -11,7 +11,7 @@ tags: [openenv, trust-and-safety]
 
 [![OpenEnv](https://img.shields.io/badge/OpenEnv-compatible-blue)](https://github.com/meta-pytorch/OpenEnv)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![HF Space](https://img.shields.io/badge/🤗-HuggingFace%20Space-yellow)](https://huggingface.co/spaces/your-username/trust-safety-audit-env)
+[![HF Space](https://img.shields.io/badge/🤗-HuggingFace%20Space-yellow)](https://huggingface.co/spaces/okaditya08/trust-safety-audit-env)
 
 An OpenEnv environment simulating an **Automated Trust & Safety Analyst** workflow. The agent reviews LLM conversational turns and decides to `ALLOW` or `BLOCK` each turn to prevent prompt injection, jailbreaking, and data exfiltration.
 
@@ -133,7 +133,7 @@ Trust & Safety (T&S) Analyst is a critical role at every company that deploys an
 
 ```bash
 # Clone the repository
-git clone https://huggingface.co/spaces/your-username/trust-safety-audit-env
+git clone https://huggingface.co/spaces/okaditya08/trust-safety-audit-env
 cd trust-safety-audit-env
 
 # Install dependencies
@@ -219,18 +219,37 @@ curl -X POST http://localhost:7860/reset \
 ## Architecture
 
 ```
-trust-safety-audit-env/
-├── openenv.yaml          # Environment manifest
-├── models.py             # Pydantic: AuditAction, AuditObservation, AuditReward
-├── corpus.py             # Deterministic corpus generation (all 3 tasks)
-├── mutations.py          # Algorithmic jailbreak mutation engine (6 techniques)
-├── graders.py            # 3 deterministic graders
-├── environment.py        # Core TrustSafetyAuditEnv (reset/step/state)
-├── server.py             # FastAPI server (8 endpoints)
-├── inference.py          # Mandatory inference script (STDOUT format)
-├── Dockerfile            # Container definition
-├── requirements.txt      # Python dependencies
-└── README.md             # This file
+openenv-trust-safety-audit/
+├── openenv.yaml                     # Environment manifest
+├── server.py                        # FastAPI server (8 endpoints, port 7860)
+├── environment.py                   # Core TrustSafetyAuditEnv (reset/step/state)
+├── models.py                        # Pydantic: AuditAction, AuditObservation, AuditReward
+├── corpus.py                        # Deterministic corpus generation (all 3 tasks)
+├── mutations.py                     # Algorithmic jailbreak mutation engine (6 techniques)
+├── graders.py                       # 3 deterministic graders
+├── inference.py                     # Mandatory inference script (STDOUT format)
+├── baseline.py                      # Baseline benchmark runner
+├── Dockerfile                       # Container definition
+├── requirements.txt                 # Unified Python dependencies
+│
+├── coliseum_defender/               # Defender model pipeline (Aditya)
+│   ├── configs/config.py            # Hyperparams + HF repo names
+│   ├── reward/mesa_reward.py        # GRPO reward function
+│   ├── integration/defender_api.py  # Inference API (port 8001)
+│   ├── eval/run_evaluation.py       # Before/after GRPO evaluation
+│   └── notebooks/                   # Training notebooks (run on Kaggle)
+│
+├── red_team_agents/                 # Attacker wrappers (Vishva)
+│   ├── attacker_dan.py              # DAN-style jailbreak generator
+│   ├── attacker_wild.py             # WildTeam indirect attacks
+│   └── mutation_agent.py            # Prompt mutation engine
+│
+├── red_team_agent_finetuning/       # Attacker fine-tuning notebooks
+├── run_arena.py                     # Local runner: see all 3 pillars in action
+├── curriculum_engine.py             # Adaptive tier escalation
+├── orchestrator.py                  # Arena + OpenEnv integration
+├── download_models.py               # Pre-download all models to disk
+└── demo/demo_script.sh              # Pitch demo script
 ```
 
 ## License

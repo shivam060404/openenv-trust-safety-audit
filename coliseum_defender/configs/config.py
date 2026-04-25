@@ -14,7 +14,7 @@ from pathlib import Path
 # IDENTITY — Update these before running anything
 # ─────────────────────────────────────────────────────────────────────────────
 
-HF_USERNAME = 'adityajethani11'          # Aditya's HuggingFace username
+HF_USERNAME = 'okaditya08'          # Aditya's HuggingFace username
 HF_TOKEN    = os.environ.get('HF_TOKEN', '')
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -28,8 +28,8 @@ SFT_MODEL_REPO   = f'{HF_USERNAME}/coliseum-defender-sft'
 GRPO_MODEL_REPO  = f'{HF_USERNAME}/coliseum-defender-grpo'
 
 # Vishva's models (attackers)
-ATTACKER1_REPO   = 'pvishva39/coliseum-attacker-dan'       # DAN agent
-ATTACKER2_REPO   = 'pvishva39/coliseum-attacker-wildteam'  # WildTeam agent
+ATTACKER1_REPO   = 'coliseum034/coliseum-attacker-dan'       # DAN agent
+ATTACKER2_REPO   = 'coliseum034/coliseum-attacker-wild'      # WildTeam agent
 
 # HF Dataset
 DATASET_REPO     = f'{HF_USERNAME}/coliseum-defender-dataset'

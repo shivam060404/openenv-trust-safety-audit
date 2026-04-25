@@ -21,3 +21,24 @@ Thumbs.db
 
 # OpenEnv
 baseline_results.json
+
+# Models (downloaded locally via download_models.py — too large for git)
+models/
+
+# Arena run output
+arena_results.jsonl
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# Training artifacts (on HF Hub, not in git)
+wandb/
+sft_output/
+grpo_output/
+unsloth_compiled_cache/
+*.safetensors
+*.bin
+
+# Logs
+*.log
