@@ -651,4 +651,4 @@ with gr.Blocks(title="COLISEUM Trust & Safety Audit", theme=gr.themes.Soft()) as
 
 
 if __name__ == "__main__":
-    demo.launch()
+    demo.launch(server_name="0.0.0.0")
