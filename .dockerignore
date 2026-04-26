@@ -20,3 +20,11 @@ logs/
 *.swp
 *.swo
 *~
+env/
+models/
+coliseum_defender/eval/
+coliseum_defender/notebooks/
+red_team_agent_finetuning/
+.cache/
+.pytest_cache/
+gradio_demo_repo/

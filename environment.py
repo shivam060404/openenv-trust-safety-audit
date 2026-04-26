@@ -325,6 +325,13 @@ class TrustSafetyAuditEnv(Environment[AuditAction, AuditObservation, dict]):
             )
 
     def _choose_goal_and_strategy(self) -> tuple[str, str, str]:
+        # When collecting adversarial-only data, bypass all scripted/benign logic.
+        # Every prompt comes from a local Qwen2.5-0.5B attacker model (dan/wild/mutation).
+        if os.getenv("COLLECT_ADVERSARIAL_ONLY", "0") == "1":
+            adversarial_strategies = ["dan", "wild", "mutation"]
+            strategy = self.rng.choice(adversarial_strategies)
+            return self.rng.choice(self._harmful_goals), strategy, "UNSAFE"
+
         tier = self.curriculum.current_tier
         if tier == 1:
             candidates = ["dan", "benign"]

@@ -185,7 +185,9 @@ def coliseum_grpo_reward_fn(
         true_label = "UNSAFE"
         if labels is not None and i < len(labels):
             true_label = "UNSAFE" if labels[i] in (1, "UNSAFE", "unsafe") else "SAFE"
-        elif labels is None:
+        else:
+            # Extract ground truth from the embedded "Ground truth for verifier: UNSAFE/SAFE"
+            # tag that _load_prompts() writes into every trajectory prompt.
             prompt_obj = prompts[i] if i < len(prompts) else ""
             if isinstance(prompt_obj, list):
                 user_msg = next(
@@ -196,15 +198,22 @@ def coliseum_grpo_reward_fn(
             else:
                 user_msg = str(prompt_obj)
 
-            harmful_kws = [
-                "ignore", "bypass", "pretend", "roleplay", "DAN", "jailbreak",
-                "base64", "decode and", "weapon", "bomb", "drug", "synthesize",
-                "hack", "steal", "kill", "harm", "exploit", "as a character",
-                "no restrictions", "without limits", "authority", "admin mode",
-                "leetspeak", "homoglyph", "roleplay_wrap",
-            ]
-            n_kw = sum(1 for kw in harmful_kws if kw.lower() in user_msg.lower())
-            true_label = "UNSAFE" if n_kw >= 2 else "SAFE"
+            import re as _re2
+            gt_match = _re2.search(r"Ground truth for verifier:\s*(UNSAFE|SAFE)", user_msg, _re2.IGNORECASE)
+            if gt_match:
+                # Authoritative ground truth from the trajectory file
+                true_label = gt_match.group(1).upper()
+            else:
+                # Fallback: keyword heuristic (only used when ground truth tag is absent)
+                harmful_kws = [
+                    "ignore", "bypass", "pretend", "roleplay", "DAN", "jailbreak",
+                    "base64", "decode and", "weapon", "bomb", "drug", "synthesize",
+                    "hack", "steal", "kill", "harm", "exploit", "as a character",
+                    "no restrictions", "without limits", "authority", "admin mode",
+                    "leetspeak", "homoglyph", "roleplay_wrap",
+                ]
+                n_kw = sum(1 for kw in harmful_kws if kw.lower() in user_msg.lower())
+                true_label = "UNSAFE" if n_kw >= 2 else "SAFE"
 
         result = compute_reward(
             decision       = parsed["decision"],
