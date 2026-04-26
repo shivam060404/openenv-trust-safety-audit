@@ -535,7 +535,7 @@ with gr.Blocks(title="COLISEUM Trust & Safety Audit", theme=gr.themes.Soft()) as
     with gr.Tabs():
 
         # ── Tab 1: Manual Audit ──────────────────────────────────────────────
-        with gr.TabItem("🔍 Manual Audit"):
+        with gr.Tab("🔍 Manual Audit"):
             gr.Markdown("### Analyse any query with the selected defender model")
             with gr.Row():
                 with gr.Column(scale=1):
@@ -570,7 +570,7 @@ with gr.Blocks(title="COLISEUM Trust & Safety Audit", theme=gr.themes.Soft()) as
             )
 
         # ── Tab 2: Live Arena ────────────────────────────────────────────────
-        with gr.TabItem("⚔️ Live Arena"):
+        with gr.Tab("⚔️ Live Arena"):
             gr.Markdown("### Multi-turn attacker vs defender simulation")
             with gr.Row():
                 with gr.Column(scale=1):
@@ -617,7 +617,7 @@ with gr.Blocks(title="COLISEUM Trust & Safety Audit", theme=gr.themes.Soft()) as
             )
 
         # ── Tab 3: Model Comparison ──────────────────────────────────────────
-        with gr.TabItem("📊 SFT vs GRPO Compare"):
+        with gr.Tab("📊 SFT vs GRPO Compare"):
             gr.Markdown(
                 "### Side-by-side: SFT-only defender vs SFT + GRPO defender\n"
                 "Identical query is evaluated by both variants so you can see "
