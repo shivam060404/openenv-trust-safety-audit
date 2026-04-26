@@ -1,44 +1,37 @@
 # COLISEUM — Python Dependencies
 # Install: pip install -r requirements.txt
 #
-# For Mac Apple Silicon (MPS): all packages work natively.
-# For Kaggle/Colab (CUDA): also install unsloth separately (see coliseum_defender/scripts/kaggle_setup.sh)
+# openenv-core==0.2.3 pulls fastmcp 3.x which controls: uvicorn, pydantic,
+# python-dotenv, openai, fastapi, huggingface_hub, numpy, pandas, tqdm, etc.
+# Those are NOT pinned here — openenv-core's resolver owns them.
+# We only pin the pure ML stack that openenv-core doesn't touch.
+#
+# Mac Apple Silicon (MPS): works as-is.
+# Kaggle/CUDA: install unsloth + bitsandbytes separately.
+# Optional: pip install mergekit | wandb
 
-# ── OpenEnv Server ────────────────────────────────────────────────────────────
+# ── OpenEnv (owns its own transitive deps — don't override them) ─────────────
 openenv-core==0.2.3
-fastapi>=0.111.0
-uvicorn>=0.29.0
-pydantic>=2.0.0
-pyyaml>=6.0.0
 
-# ── LLM API clients ───────────────────────────────────────────────────────────
-openai>=1.30.0          # Groq uses OpenAI-compatible client
-python-dotenv>=1.0.0
-requests>=2.31.0
-
-# ── Core ML (defender + attackers) ───────────────────────────────────────────
-torch>=2.1.0
-transformers>=4.43.0
-accelerate>=0.28.0
-peft>=0.10.0
+# ── Core ML — pinned (no overlap with openenv-core's dep tree) ────────────────
+torch==2.5.1
+transformers==4.47.1
+accelerate==1.2.1
+peft==0.14.0
 trl==0.15.2
-datasets>=2.18.0
-huggingface_hub>=0.22.0
-safetensors>=0.4.0
-sentencepiece>=0.1.99
-protobuf>=3.20.0
+datasets==3.1.0
+safetensors==0.4.5
+sentencepiece==0.2.0
+tokenizers==0.21.0
 
 # ── Data & Eval ───────────────────────────────────────────────────────────────
-pandas>=2.0.0
-numpy>=1.24.0
 scikit-learn>=1.3.0
 matplotlib>=3.7.0
 seaborn>=0.13.0
-tqdm>=4.65.0
 
-# ── Optional: W&B logging (orchestrator.py --wandb) ─────────────────────────
-# wandb>=0.17.0
+# ── Single known hard conflict: torch + datasets both pull fsspec ─────────────
+# openenv-core resolves fsspec to 2026.3.0; torch 2.5.1 needs >=2023.1.0 — compatible.
+# No pin needed. Leaving this comment so the decision is documented.
 
-# ── NOT included (install separately on CUDA only) ────────────────────────────
-# unsloth  — see coliseum_defender/scripts/kaggle_setup.sh
-# bitsandbytes — CUDA only, not needed on Mac MPS
+
+openenv
