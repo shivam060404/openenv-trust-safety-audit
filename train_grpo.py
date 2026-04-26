@@ -48,17 +48,19 @@ MERGED_CACHE = Path(__file__).parent / "models" / "base" / "Qwen2.5-1.5B-sft-mer
 # ---------------------------------------------------------------------------
 
 def collect(episodes: int, turns: int, seed: int) -> None:
-    # Re-assert after dotenv: local attackers, no live API attacker, groq victim.
+    # Lock down: only local model-generated adversarial attacks, no scripted/benign.
     os.environ["USE_LIVE_ATTACKER_API"] = "0"
     os.environ["USE_LOCAL_ATTACKER_MODELS"] = "1"
+    os.environ["COLLECT_ADVERSARIAL_ONLY"] = "1"   # no scripted benign prompts
 
     TRAJECTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
 
     victim_provider = os.getenv("VICTIM_PROVIDER", "groq")
     print(f"Collect mode: {episodes} episodes × {turns} turns")
-    print("  Attackers : local Qwen2.5-0.5B + DAN/Wild adapters")
+    print("  Attackers : local Qwen2.5-0.5B + DAN/Wild adapters (NO scripted templates)")
+    print("  Strategies: dan / wild / mutation only — 100% model-generated UNSAFE prompts")
     print("  Defender  : local Qwen2.5-1.5B + coliseum-defender-sft (MPS/CPU)")
-    print(f"  Victim    : {victim_provider} (Groq API — llama-3.1-8b-instant)")
+    print(f"  Victim    : {victim_provider} (Groq API — llama-3.1-8b-instant, called on ALLOW)")
     print(f"  Output    : {TRAJECTORY_PATH}\n")
 
     # Load the local defender model once (Qwen2.5-1.5B + SFT adapter).
@@ -136,10 +138,11 @@ def _plot_training_metrics(trainer, output_dir: str, max_steps: int, result) -> 
 
     steps, rewards, losses = [], [], []
     for entry in log_history:
-        if "rewards/mean" in entry:
+        # TRL GRPOTrainer logs "reward" (aggregate mean), not "rewards/mean"
+        if "reward" in entry and "step" in entry:
             steps.append(entry["step"])
-            rewards.append(entry["rewards/mean"])
-        if "loss" in entry:
+            rewards.append(entry["reward"])
+        if "loss" in entry and entry.get("loss") is not None and "step" in entry:
             losses.append((entry["step"], entry["loss"]))
 
     # ── Console table ──────────────────────────────────────────────────────

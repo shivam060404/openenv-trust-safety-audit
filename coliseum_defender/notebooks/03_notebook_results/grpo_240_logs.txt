@@ -1,0 +1,61 @@
+(env) aditya@Adityas-MacBook-Pro openenv-trust-safety-audit %  python train_grpo.py train --max_steps 40
+Using cached merged model: /Users/aditya/Documents/Aditya/Python/OpenEnv Hackathon/openenv-trust-safety-audit/models/base/Qwen2.5-1.5B-sft-merged
+
+Device: mps
+Loading model from: /Users/aditya/Documents/Aditya/Python/OpenEnv Hackathon/openenv-trust-safety-audit/models/base/Qwen2.5-1.5B-sft-merged
+Loading checkpoint shards: 100%|███████████████████████████████████████████████████████| 2/2 [00:03<00:00,  1.87s/it]
+Adding fresh LoRA (r=16, alpha=16) for GRPO ...
+trainable params: 18,464,768 || all params: 1,562,179,072 || trainable%: 1.1820
+{'loss': -0.0, 'grad_norm': 0.8562655448913574, 'learning_rate': 9.75e-06, 'rewards/coliseum_grpo_reward_fn': 0.5941249877214432, 'reward': 0.5941249877214432, 'reward_std': 0.7765800204360858, 'completion_length': 96.0, 'kl': 0.0, 'epoch': 0.02}
+{'loss': -0.0, 'grad_norm': 6.946765422821045, 'learning_rate': 9.5e-06, 'rewards/coliseum_grpo_reward_fn': 0.32224999368190765, 'reward': 0.32224999368190765, 'reward_std': 0.39315133984200656, 'completion_length': 84.5, 'kl': 1.3053417205810547e-05, 'epoch': 0.03}
+{'loss': 0.0, 'grad_norm': 0.6976832151412964, 'learning_rate': 9.250000000000001e-06, 'rewards/coliseum_grpo_reward_fn': -0.2253749817609787, 'reward': -0.2253749817609787, 'reward_std': 0.3823680075875018, 'completion_length': 93.5, 'kl': 0.00018215179443359375, 'epoch': 0.05}
+{'loss': -0.0, 'grad_norm': 0.7120258808135986, 'learning_rate': 9e-06, 'rewards/coliseum_grpo_reward_fn': 0.5893750190734863, 'reward': 0.5893750190734863, 'reward_std': 0.7741051330813207, 'completion_length': 96.0, 'kl': -6.988644599914551e-06, 'epoch': 0.07}
+{'loss': 0.0001, 'grad_norm': 0.8981683254241943, 'learning_rate': 8.750000000000001e-06, 'rewards/coliseum_grpo_reward_fn': 0.8583750277757645, 'reward': 0.8583750277757645, 'reward_std': 0.3880248240020592, 'completion_length': 93.5, 'kl': 0.0031726956367492676, 'epoch': 0.08}
+{'loss': -0.0, 'grad_norm': 0.9875390529632568, 'learning_rate': 8.5e-06, 'rewards/coliseum_grpo_reward_fn': 0.8536249846220016, 'reward': 0.8536249846220016, 'reward_std': 0.4064096553483978, 'completion_length': 96.0, 'kl': 3.814697265625e-06, 'epoch': 0.1}
+{'loss': 0.0, 'grad_norm': 0.6547427773475647, 'learning_rate': 8.25e-06, 'rewards/coliseum_grpo_reward_fn': -0.2358749657869339, 'reward': -0.2358749657869339, 'reward_std': 0.39120682096108794, 'completion_length': 96.0, 'kl': 5.707144737243652e-06, 'epoch': 0.12}
+{'loss': 0.0002, 'grad_norm': 7.7799391746521, 'learning_rate': 8.000000000000001e-06, 'rewards/coliseum_grpo_reward_fn': 0.5898750126361847, 'reward': 0.5898750126361847, 'reward_std': 0.7765799504704773, 'completion_length': 96.0, 'kl': 0.004206329584121704, 'epoch': 0.13}
+{'loss': 0.0, 'grad_norm': 2.062145471572876, 'learning_rate': 7.75e-06, 'rewards/coliseum_grpo_reward_fn': 1.13612499833107, 'reward': 1.13612499833107, 'reward_std': 0.005833608389366418, 'completion_length': 96.0, 'kl': 0.0001723170280456543, 'epoch': 0.15}
+{'loss': 0.001, 'grad_norm': 15.823263168334961, 'learning_rate': 7.500000000000001e-06, 'rewards/coliseum_grpo_reward_fn': 0.05112500488758087, 'reward': 0.05112500488758087, 'reward_std': 0.7680947458429728, 'completion_length': 95.25, 'kl': 0.02539762854576111, 'epoch': 0.17}
+{'loss': 0.0012, 'grad_norm': 12.214207649230957, 'learning_rate': 7.25e-06, 'rewards/coliseum_grpo_reward_fn': 0.30937500298023224, 'reward': 0.30937500298023224, 'reward_std': 1.1700849327025935, 'completion_length': 96.0, 'kl': 0.030642196536064148, 'epoch': 0.18}
+{'loss': 0.001, 'grad_norm': 8.306622505187988, 'learning_rate': 7e-06, 'rewards/coliseum_grpo_reward_fn': 0.5912500321865082, 'reward': 0.5912500321865082, 'reward_std': 0.7863026661216281, 'completion_length': 96.0, 'kl': 0.024752944707870483, 'epoch': 0.2}
+{'loss': 0.0022, 'grad_norm': 14.162337303161621, 'learning_rate': 6.750000000000001e-06, 'rewards/coliseum_grpo_reward_fn': 0.3178749829530716, 'reward': 0.3178749829530716, 'reward_std': 0.3922675039502792, 'completion_length': 96.0, 'kl': 0.05604805052280426, 'epoch': 0.22}
+{'loss': 0.0038, 'grad_norm': 20.798755645751953, 'learning_rate': 6.5000000000000004e-06, 'rewards/coliseum_grpo_reward_fn': 0.03200003504753113, 'reward': 0.03200003504753113, 'reward_std': 0.7834743070416152, 'completion_length': 96.0, 'kl': 0.09486326575279236, 'epoch': 0.23}
+{'loss': 0.0076, 'grad_norm': 16.333463668823242, 'learning_rate': 6.25e-06, 'rewards/coliseum_grpo_reward_fn': 0.5899999737739563, 'reward': 0.5899999737739563, 'reward_std': 0.7817065544659272, 'completion_length': 93.25, 'kl': 0.1890665739774704, 'epoch': 0.25}
+{'loss': 0.0, 'grad_norm': 1.0281916856765747, 'learning_rate': 6e-06, 'rewards/coliseum_grpo_reward_fn': 0.8683750033378601, 'reward': 0.8683750033378601, 'reward_std': 0.3887319244968239, 'completion_length': 96.0, 'kl': 0.0007890015840530396, 'epoch': 0.27}
+{'loss': 0.0001, 'grad_norm': 1.2486300468444824, 'learning_rate': 5.75e-06, 'rewards/coliseum_grpo_reward_fn': -0.5289999842643738, 'reward': -0.5289999842643738, 'reward_std': 0.8015055351424962, 'completion_length': 81.5, 'kl': 0.0031175613403320312, 'epoch': 0.28}
+{'loss': 0.0026, 'grad_norm': 8.454856872558594, 'learning_rate': 5.500000000000001e-06, 'rewards/coliseum_grpo_reward_fn': 0.8577500134706497, 'reward': 0.8577500134706497, 'reward_std': 0.39456556463846937, 'completion_length': 96.0, 'kl': 0.06549008190631866, 'epoch': 0.3}
+{'loss': 0.0021, 'grad_norm': 4.340670108795166, 'learning_rate': 5.2500000000000006e-06, 'rewards/coliseum_grpo_reward_fn': -0.23137496411800385, 'reward': -0.23137496411800385, 'reward_std': 0.3919139043428004, 'completion_length': 96.0, 'kl': 0.0524190217256546, 'epoch': 0.32}
+{'loss': 0.0013, 'grad_norm': 9.001181602478027, 'learning_rate': 5e-06, 'rewards/coliseum_grpo_reward_fn': 0.8597500026226044, 'reward': 0.8597500026226044, 'reward_std': 0.3892622691928409, 'completion_length': 96.0, 'kl': 0.033691078424453735, 'epoch': 0.33}
+{'loss': 0.0005, 'grad_norm': 3.9723432064056396, 'learning_rate': 4.75e-06, 'rewards/coliseum_grpo_reward_fn': 0.04887501895427704, 'reward': 0.04887501895427704, 'reward_std': 0.7815297744818963, 'completion_length': 96.0, 'kl': 0.011351913213729858, 'epoch': 0.35}
+{'loss': 0.0, 'grad_norm': 0.8016923666000366, 'learning_rate': 4.5e-06, 'rewards/coliseum_grpo_reward_fn': 0.8620000034570694, 'reward': 0.8620000034570694, 'reward_std': 0.39562624820973724, 'completion_length': 96.0, 'kl': 0.00012396275997161865, 'epoch': 0.37}
+{'loss': 0.0, 'grad_norm': 0.9369764924049377, 'learning_rate': 4.25e-06, 'rewards/coliseum_grpo_reward_fn': 0.5719999819993973, 'reward': 0.5719999819993973, 'reward_std': 0.770392797421664, 'completion_length': 96.0, 'kl': 0.0001386404037475586, 'epoch': 0.38}
+{'loss': 0.0005, 'grad_norm': 4.738968372344971, 'learning_rate': 4.000000000000001e-06, 'rewards/coliseum_grpo_reward_fn': 0.023875027894973755, 'reward': 0.023875027894973755, 'reward_std': 0.7868330541823525, 'completion_length': 85.25, 'kl': 0.011428743600845337, 'epoch': 0.4}
+{'loss': 0.0004, 'grad_norm': 2.6093807220458984, 'learning_rate': 3.7500000000000005e-06, 'rewards/coliseum_grpo_reward_fn': 0.8553750216960907, 'reward': 0.8553750216960907, 'reward_std': 0.39969211956486106, 'completion_length': 96.0, 'kl': 0.009326964616775513, 'epoch': 0.42}
+{'loss': 0.008, 'grad_norm': 29.063106536865234, 'learning_rate': 3.5e-06, 'rewards/coliseum_grpo_reward_fn': 0.31050001084804535, 'reward': 0.31050001084804535, 'reward_std': 0.39774756925180554, 'completion_length': 96.0, 'kl': 0.20075607299804688, 'epoch': 0.43}
+{'loss': 0.0034, 'grad_norm': 2.881503105163574, 'learning_rate': 3.2500000000000002e-06, 'rewards/coliseum_grpo_reward_fn': 0.04149998724460602, 'reward': 0.04149998724460602, 'reward_std': 0.7802923043491319, 'completion_length': 92.5, 'kl': 0.08484268188476562, 'epoch': 0.45}
+{'loss': 0.0004, 'grad_norm': 3.692685604095459, 'learning_rate': 3e-06, 'rewards/coliseum_grpo_reward_fn': 0.8503749966621399, 'reward': 0.8503749966621399, 'reward_std': 0.4011063137149904, 'completion_length': 96.0, 'kl': 0.009364426136016846, 'epoch': 0.47}
+{'loss': 0.0002, 'grad_norm': 4.214717864990234, 'learning_rate': 2.7500000000000004e-06, 'rewards/coliseum_grpo_reward_fn': 0.8620000332593918, 'reward': 0.8620000332593918, 'reward_std': 0.3899693615094293, 'completion_length': 96.0, 'kl': 0.005835205316543579, 'epoch': 0.48}
+{'loss': 0.0001, 'grad_norm': 1.4964070320129395, 'learning_rate': 2.5e-06, 'rewards/coliseum_grpo_reward_fn': 0.04625001549720764, 'reward': 0.04625001549720764, 'reward_std': 0.7672108763072174, 'completion_length': 96.0, 'kl': 0.0031675398349761963, 'epoch': 0.5}
+{'loss': 0.0008, 'grad_norm': 6.195057392120361, 'learning_rate': 2.25e-06, 'rewards/coliseum_grpo_reward_fn': 0.5921249985694885, 'reward': 0.5921249985694885, 'reward_std': 0.7769335729535669, 'completion_length': 84.5, 'kl': 0.021017715334892273, 'epoch': 0.52}
+{'loss': 0.0045, 'grad_norm': 20.5456485748291, 'learning_rate': 2.0000000000000003e-06, 'rewards/coliseum_grpo_reward_fn': 0.3113749921321869, 'reward': 0.3113749921321869, 'reward_std': 0.4003992699144874, 'completion_length': 96.0, 'kl': 0.11377143859863281, 'epoch': 0.53}
+{'loss': 0.0, 'grad_norm': 0.7699249386787415, 'learning_rate': 1.75e-06, 'rewards/coliseum_grpo_reward_fn': 0.0338749885559082, 'reward': 0.0338749885559082, 'reward_std': 0.7946112888166681, 'completion_length': 96.0, 'kl': 6.486475467681885e-05, 'epoch': 0.55}
+{'loss': -0.0, 'grad_norm': 0.9400568008422852, 'learning_rate': 1.5e-06, 'rewards/coliseum_grpo_reward_fn': 0.8614999651908875, 'reward': 0.8614999651908875, 'reward_std': 0.3889087369025219, 'completion_length': 96.0, 'kl': 0.0001989901065826416, 'epoch': 0.57}
+{'loss': 0.001, 'grad_norm': 6.538294315338135, 'learning_rate': 1.25e-06, 'rewards/coliseum_grpo_reward_fn': 0.8554999977350235, 'reward': 0.8554999977350235, 'reward_std': 0.40092957406886853, 'completion_length': 96.0, 'kl': 0.0250091552734375, 'epoch': 0.58}
+{'loss': 0.0006, 'grad_norm': 4.088315963745117, 'learning_rate': 1.0000000000000002e-06, 'rewards/coliseum_grpo_reward_fn': 0.5892499685287476, 'reward': 0.5892499685287476, 'reward_std': 0.7795852377603296, 'completion_length': 96.0, 'kl': 0.014992386102676392, 'epoch': 0.6}
+{'loss': 0.0032, 'grad_norm': 15.12594985961914, 'learning_rate': 7.5e-07, 'rewards/coliseum_grpo_reward_fn': 0.31700001657009125, 'reward': 0.31700001657009125, 'reward_std': 0.39456559042446315, 'completion_length': 96.0, 'kl': 0.07994970679283142, 'epoch': 0.62}
+{'loss': 0.0003, 'grad_norm': 0.9859256744384766, 'learning_rate': 5.000000000000001e-07, 'rewards/coliseum_grpo_reward_fn': 0.04237505793571472, 'reward': 0.04237505793571472, 'reward_std': 0.7836510128108785, 'completion_length': 96.0, 'kl': 0.008567795157432556, 'epoch': 0.63}
+{'loss': 0.0025, 'grad_norm': 10.96523380279541, 'learning_rate': 2.5000000000000004e-07, 'rewards/coliseum_grpo_reward_fn': 0.31187497079372406, 'reward': 0.31187497079372406, 'reward_std': 0.39049969826010056, 'completion_length': 96.0, 'kl': 0.06165441870689392, 'epoch': 0.65}
+{'loss': 0.0063, 'grad_norm': 22.451452255249023, 'learning_rate': 0.0, 'rewards/coliseum_grpo_reward_fn': 0.31687499582767487, 'reward': 0.31687499582767487, 'reward_std': 1.1538214492611587, 'completion_length': 96.0, 'kl': 0.15705424547195435, 'epoch': 0.67}
+{'train_runtime': 1717.6374, 'train_samples_per_second': 0.186, 'train_steps_per_second': 0.023, 'train_loss': 0.0014013338955180643, 'epoch': 0.67}
+100%|████████████████████████████████████████████████████████████████████████████████| 40/40 [28:37<00:00, 42.94s/it]
+
+Saved GRPO adapter to: models/adapters/coliseum-defender-grpo-live
+
+============================================================
+GRPO TRAINING SUMMARY
+============================================================
+  Final training loss : 0.0014
+  Steps completed     : 40
+============================================================
+No reward logs found — skipping curve.
+(env) aditya@Adityas-MacBook-Pro openenv-trust-safety-audit % 

@@ -20,8 +20,9 @@ from pydantic import BaseModel
 
 from openenv.core.env_server.http_server import create_app
 from environment import TrustSafetyAuditEnv
-from models import AuditAction, AuditObservation, Decision
+from models import AuditAction, AuditObservation
 from inference import run_benchmark
+from app import build_custom_ui
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # App Configuration
@@ -31,7 +32,8 @@ app = create_app(
     env=TrustSafetyAuditEnv,
     action_cls=AuditAction,
     observation_cls=AuditObservation,
-    env_name="trust-safety-audit-env"
+    env_name="trust-safety-audit-env",
+    gradio_builder=build_custom_ui
 )
 
 app.title = "Trust & Safety Audit Environment"
@@ -67,17 +69,6 @@ class GraderResponse(BaseModel):
 class BaselineResponse(BaseModel):
     results: Dict[str, Any]
     status: str
-
-class LegacyResetRequest(BaseModel):
-    difficulty: int = 1
-    seed: int | None = None
-    total_turns: int = 24
-
-class LegacyStepRequest(BaseModel):
-    session_id: str
-    decision: str
-    confidence: float = 1.0
-    reason: str | None = None
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # Custom Endpoints
@@ -161,48 +152,6 @@ async def baseline(force: bool = Query(False, description="Recompute baseline ev
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# Compatibility endpoints for earlier Coliseum notebooks and demos.
-_legacy_env = TrustSafetyAuditEnv()
-
-@app.post("/env/reset", tags=["Compatibility"])
-async def env_reset(req: LegacyResetRequest):
-    obs = _legacy_env.reset(seed=req.seed, difficulty=req.difficulty, total_turns=req.total_turns)
-    return {
-        "session_id": obs.session_id,
-        "observation": {
-            "attacker_prompt": obs.current_turn,
-            "target_response": obs.target_response,
-            "metadata": obs.metadata,
-        },
-    }
-
-@app.post("/env/step", tags=["Compatibility"])
-async def env_step(req: LegacyStepRequest):
-    try:
-        decision = Decision(req.decision.upper())
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail="decision must be BLOCK, ALLOW, or a supported TOOL action") from exc
-    obs = _legacy_env.step(AuditAction(decision=decision, reasoning=req.reason))
-    last = obs.conversation_history[-1] if obs.conversation_history else {}
-    return {
-        "reward": {
-            "score": float(obs.reward or 0.0),
-            "breakdown": last.get("reward_breakdown", {}),
-        },
-        "done": bool(obs.done),
-        "observation": {
-            "attacker_prompt": obs.current_turn,
-            "target_response": obs.target_response,
-            "metadata": obs.metadata,
-        },
-        "info": {
-            "true_label": last.get("true_label"),
-            "attack_tier": obs.metadata.get("attack_tier"),
-            "victim_called": last.get("victim_called", False),
-        },
-    }
 
 if __name__ == "__main__":
     import uvicorn
