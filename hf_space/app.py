@@ -257,12 +257,12 @@ _CSS = """
   padding: 12px 18px;
   margin-bottom: 20px;
   font-size: 12px;
-  color: #e0e0ff;
+  color: #e0e0ff !important;
   font-family: 'JetBrains Mono', monospace;
   letter-spacing: 0.3px;
   border-left: 4px solid #e94560;
 }
-.config-bar b { color: #ffd460; }
+.config-bar b { color: #ffd460 !important; }
 
 .flow {
   display: flex;
