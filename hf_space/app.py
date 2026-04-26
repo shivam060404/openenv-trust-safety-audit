@@ -611,14 +611,38 @@ Red-team evaluation framework with live attacker ↔ defender simulation.
 """
 
 _GRADIO_CSS = """
-body, .gradio-container { background: #f5f0e8 !important; color: #1a1a1a !important; }
-.gradio-container * { color: #1a1a1a; }
-label, .label-wrap span, .block span, p, h1, h2, h3, li { color: #1a1a1a !important; }
-textarea, input[type=text], input[type=password] {
-    background: #fffdf7 !important; color: #1a1a1a !important;
-    border: 1px solid #c8bfa8 !important; }
-.tab-nav button { color: #1a1a1a !important; background: #ede8dc !important; }
-.tab-nav button.selected { background: #c8bfa8 !important; font-weight: 700; }
+/* catch-all: every element in the container gets black text */
+body, .gradio-container, .gradio-container * { color: #111111 !important; }
+
+/* labels, radio/checkbox text, slider values */
+label, .label-wrap, .label-wrap span, .block label span,
+.wrap span, .secondary-wrap span,
+.radio-group label, .checkbox-group label,
+input[type=radio] + span, input[type=checkbox] + span,
+.slider-wrap span, [data-testid] span { color: #111111 !important; font-weight: 600; }
+
+/* markdown prose: headings, paragraphs, table cells, blockquote */
+p, h1, h2, h3, h4, li, td, th, blockquote,
+.prose *, .md *, .svelte-phx99e * { color: #111111 !important; }
+table { border-collapse: collapse; width: 100%; }
+th, td { border: 1px solid #bbb !important; padding: 6px 10px !important; }
+th { background: #e8e4dc !important; }
+blockquote { border-left: 3px solid #888 !important; padding-left: 10px !important; }
+
+/* tab buttons */
+.tab-nav button, button[role=tab] {
+    color: #111111 !important; font-weight: 600 !important; font-size: 14px !important; }
+.tab-nav button.selected, button[role=tab][aria-selected=true] {
+    color: #111111 !important; font-weight: 700 !important; }
+
+/* input / textarea */
+textarea, input[type=text], input[type=password], input[type=number] {
+    color: #111111 !important; background: #ffffff !important;
+    border: 1px solid #c0b89a !important; }
+textarea::placeholder, input::placeholder { color: #777 !important; }
+
+/* examples */
+.examples table td, .examples table th { color: #111111 !important; }
 """
 
 with gr.Blocks(title="COLISEUM Trust & Safety Audit", theme=gr.themes.Default(), css=_GRADIO_CSS) as demo:

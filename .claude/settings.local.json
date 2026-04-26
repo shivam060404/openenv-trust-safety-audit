@@ -9,7 +9,11 @@
       "Bash(git merge *)",
       "Bash(python -c \"import ast; files = ['environment.py','server.py','run_arena.py','baseline.py','inference.py','models.py','interactive_session.py','coliseum_defender/integration/defender_api.py']; [print\\(f'OK: {f}'\\) or ast.parse\\(open\\(f\\).read\\(\\)\\) for f in files]; print\\('All parse clean'\\)\")",
       "Bash(\"C:\\\\Users\\\\ASUS\\\\anaconda3\\\\envs\\\\hack-blr\\\\python.exe\" -c \"import ast; files = ['environment.py','server.py','run_arena.py','baseline.py','inference.py','models.py','interactive_session.py','coliseum_defender/integration/defender_api.py']; [print\\(f'OK: {f}'\\) or ast.parse\\(open\\(f\\).read\\(\\)\\) for f in files]; print\\('All parse clean'\\)\")",
-      "PowerShell(Get-Process -Id \\(Get-NetTCPConnection -LocalPort 8001 -ErrorAction SilentlyContinue\\).OwningProcess -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime)"
+      "PowerShell(Get-Process -Id \\(Get-NetTCPConnection -LocalPort 8001 -ErrorAction SilentlyContinue\\).OwningProcess -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, StartTime)",
+      "Bash(/c/Users/ASUS/anaconda3/envs/hack-blr/python.exe -c ' *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(C:UsersASUSanaconda3envshack-blrpython.exe -c ' *)"
     ]
   }
 }
